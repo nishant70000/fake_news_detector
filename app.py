@@ -4,41 +4,43 @@ import os
 from tqdm import tqdm
 import urllib.request
 import numpy as np
-import sys
-import gdown
+import requests
 import zipfile
 
-# Google Drive file ID (from your link)
+# ------------------- Google Drive Setup -------------------
 FILE_ID = "1a9VsnDJlwTd63JqDVLeycZNbO_SmFJFB"
-URL = f"https://drive.google.com/uc?id={FILE_ID}"
+URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
+DATA_ZIP_PATH = "data/train.tsv.zip"
+DATA_TSV_PATH = "data/train.tsv"
 
 # Create data folder if not exists
 if not os.path.exists("data"):
     os.makedirs("data")
 
-# Path where we want to save the dataset
-DATA_PATH = "data/train.tsv.zip"
-
-# Download if file not present
-if not os.path.exists(DATA_PATH):
+# Download file if it doesn't exist
+if not os.path.exists(DATA_TSV_PATH):
     print("Downloading dataset from Google Drive...")
-    gdown.download(URL, DATA_PATH, quiet=False)
+    with requests.get(URL, stream=True) as r:
+        r.raise_for_status()
+        with open(DATA_ZIP_PATH, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=32768):
+                if chunk:
+                    f.write(chunk)
+    print("Download complete!")
 
-    # Unzip the file
-    with zipfile.ZipFile(DATA_PATH, "r") as zip_ref:
+    # Unzip the dataset
+    with zipfile.ZipFile(DATA_ZIP_PATH, 'r') as zip_ref:
         zip_ref.extractall("data")
     print("Dataset extracted to data/")
 
 # ------------------- Argument Parser -------------------
 parser = argparse.ArgumentParser(description='r/Fakeddit image downloader')
-
 parser.add_argument(
     '--type',
     type=str,
-    default="data/train.tsv",   # default now points to extracted file
+    default=DATA_TSV_PATH,   # default points to extracted file
     help='Path to train, validate, or test file (default: data/train.tsv)'
 )
-
 args = parser.parse_args()
 
 # ------------------- Load Dataset -------------------
