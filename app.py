@@ -1,36 +1,66 @@
 import argparse
 import pandas as pd
 import os
-from tqdm import tqdm as tqdm
+from tqdm import tqdm
 import urllib.request
 import numpy as np
 import sys
+import gdown
+import zipfile
 
+# Google Drive file ID (from your link)
+FILE_ID = "1a9VsnDJlwTd63JqDVLeycZNbO_SmFJFB"
+URL = f"https://drive.google.com/uc?id={FILE_ID}"
+
+# Create data folder if not exists
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+# Path where we want to save the dataset
+DATA_PATH = "data/train.tsv.zip"
+
+# Download if file not present
+if not os.path.exists(DATA_PATH):
+    print("Downloading dataset from Google Drive...")
+    gdown.download(URL, DATA_PATH, quiet=False)
+
+    # Unzip the file
+    with zipfile.ZipFile(DATA_PATH, "r") as zip_ref:
+        zip_ref.extractall("data")
+    print("Dataset extracted to data/")
+
+# ------------------- Argument Parser -------------------
 parser = argparse.ArgumentParser(description='r/Fakeddit image downloader')
 
-# now "type" has a default, so it won’t throw an error if you don’t pass anything
 parser.add_argument(
     '--type',
     type=str,
-    default="train.tsv",   # <--- change this to whatever file you want as default
-    help='Path to train, validate, or test file (default: train.tsv)'
+    default="data/train.tsv",   # default now points to extracted file
+    help='Path to train, validate, or test file (default: data/train.tsv)'
 )
 
 args = parser.parse_args()
 
+# ------------------- Load Dataset -------------------
+print(f"Loading dataset: {args.type}")
 df = pd.read_csv(args.type, sep="\t")
 df = df.replace(np.nan, '', regex=True)
 df.fillna('', inplace=True)
 
+# ------------------- Image Downloader -------------------
 pbar = tqdm(total=len(df))
 
 if not os.path.exists("images"):
     os.makedirs("images")
 
 for index, row in df.iterrows():
-    if row["hasImage"] == True and row["image_url"] != "" and row["image_url"] != "nan":
-        image_url = row["image_url"]
-        urllib.request.urlretrieve(image_url, "images/" + row["id"] + ".jpg")
+    if str(row.get("hasImage", "")) == "True" and row.get("image_url", "") not in ["", "nan"]:
+        try:
+            image_url = row["image_url"]
+            urllib.request.urlretrieve(image_url, f"images/{row['id']}.jpg")
+        except Exception as e:
+            print(f"Failed to download {row.get('id', 'unknown')}: {e}")
     pbar.update(1)
 
-print("done")
+pbar.close()
+print("✅ All done!")
