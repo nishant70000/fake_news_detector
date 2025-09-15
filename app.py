@@ -4,12 +4,12 @@ import os
 from tqdm import tqdm
 import urllib.request
 import numpy as np
-import requests
+import gdown
 import zipfile
 
 # ------------------- Google Drive Setup -------------------
 FILE_ID = "1a9VsnDJlwTd63JqDVLeycZNbO_SmFJFB"
-URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
+URL = f"https://drive.google.com/uc?id={FILE_ID}"
 DATA_ZIP_PATH = "data/train.tsv.zip"
 DATA_TSV_PATH = "data/train.tsv"
 
@@ -17,21 +17,15 @@ DATA_TSV_PATH = "data/train.tsv"
 if not os.path.exists("data"):
     os.makedirs("data")
 
-# Download file if it doesn't exist
+# Download and unzip if not exists
 if not os.path.exists(DATA_TSV_PATH):
     print("Downloading dataset from Google Drive...")
-    with requests.get(URL, stream=True) as r:
-        r.raise_for_status()
-        with open(DATA_ZIP_PATH, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=32768):
-                if chunk:
-                    f.write(chunk)
-    print("Download complete!")
+    gdown.download(URL, DATA_ZIP_PATH, quiet=False, fuzzy=True)
 
-    # Unzip the dataset
+    print("Unzipping dataset...")
     with zipfile.ZipFile(DATA_ZIP_PATH, 'r') as zip_ref:
         zip_ref.extractall("data")
-    print("Dataset extracted to data/")
+    print("Dataset ready!")
 
 # ------------------- Argument Parser -------------------
 parser = argparse.ArgumentParser(description='r/Fakeddit image downloader')
