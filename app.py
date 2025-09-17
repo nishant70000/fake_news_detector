@@ -15,17 +15,27 @@ st.title("📰 Fake News Detector")
 st.write("This app classifies news articles as **FAKE** or **REAL** using Machine Learning.")
 
 # -------------------------------
-# Load datasets
+# Load datasets (supporting .zip)
 # -------------------------------
 @st.cache_data
 def load_data():
     try:
-        df_fake = pd.read_csv("data/fake.csv")
-        df_true = pd.read_csv("data/true.csv")
+        # If zipped files exist, load from zip
+        try:
+            df_fake = pd.read_csv("data/fake.csv.zip", compression="zip")
+        except FileNotFoundError:
+            df_fake = pd.read_csv("data/fake.csv")
 
+        try:
+            df_true = pd.read_csv("data/true.csv.zip", compression="zip")
+        except FileNotFoundError:
+            df_true = pd.read_csv("data/true.csv")
+
+        # Assign labels
         df_fake["label"] = 1   # 1 → Fake
         df_true["label"] = 0   # 0 → Real
 
+        # Merge datasets
         df = pd.concat([df_fake, df_true], axis=0).sample(frac=1, random_state=42).reset_index(drop=True)
         return df
     except Exception as e:
@@ -46,7 +56,7 @@ else:
 X = df["text"].astype(str)  # news text
 y = df["label"]
 
-# Split data
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Vectorization
@@ -63,7 +73,7 @@ y_pred = model.predict(X_test_tfidf)
 acc = accuracy_score(y_test, y_pred)
 st.success(f"✅ Model trained with Accuracy: {acc*100:.2f}%")
 
-with st.expander("See classification report"):
+with st.expander("📊 See classification report"):
     st.text(classification_report(y_test, y_pred, target_names=["REAL", "FAKE"]))
 
 # -------------------------------
