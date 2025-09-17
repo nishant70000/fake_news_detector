@@ -15,21 +15,22 @@ st.title("📰 Fake News Detector")
 st.write("This app classifies news articles as **FAKE** or **REAL** using Machine Learning.")
 
 # -------------------------------
-# Load datasets (supporting .zip)
+# Load datasets (CSV or compressed)
 # -------------------------------
 @st.cache_data
 def load_data():
     try:
-        # If zipped files exist, load from zip
+        # Fake news
         try:
-            df_fake = pd.read_csv("data/fake.csv.zip", compression="zip")
+            df_fake = pd.read_csv("data/fake.csv.zip", compression="infer")
         except FileNotFoundError:
-            df_fake = pd.read_csv("data/fake.csv")
+            df_fake = pd.read_csv("data/fake.csv", compression="infer")
 
+        # True news
         try:
-            df_true = pd.read_csv("data/true.csv.zip", compression="zip")
+            df_true = pd.read_csv("data/true.csv.zip", compression="infer")
         except FileNotFoundError:
-            df_true = pd.read_csv("data/true.csv")
+            df_true = pd.read_csv("data/true.csv", compression="infer")
 
         # Assign labels
         df_fake["label"] = 1   # 1 → Fake
@@ -39,9 +40,12 @@ def load_data():
         df = pd.concat([df_fake, df_true], axis=0).sample(frac=1, random_state=42).reset_index(drop=True)
         return df
     except Exception as e:
-        st.error(f"Error loading dataset: {e}")
+        st.error(f"❌ Error loading dataset: {e}")
         return None
 
+# -------------------------------
+# Load data
+# -------------------------------
 df = load_data()
 if df is not None:
     st.subheader("📂 Dataset Preview")
